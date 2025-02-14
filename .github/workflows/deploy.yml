@@ -1,45 +1,28 @@
-name: Deploy to GitHub Pages
+name: flutter-web-deploy
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
+    branches:
+      - main # mainブランチへのpushをトリガーにする
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
-          
-      - name: Install dependencies
-        run: flutter pub get
-        
-      - name: Build
-        run: flutter build web --base-href "/flutter/"
-        
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
+    runs-on: ubuntu-latest # GitHub Actionsの実行環境
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/checkout@v3 # リポジトリをチェックアウト
+      - uses: actions/setup-java@v3 # Javaセットアップ (Flutterビルドに必要)
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2 # Flutterアクション
+        with:
+          flutter-version: '3.x' # 使用するFlutterバージョン (適宜変更)
+          channel: 'stable'
+      - run: flutter config --enable-web # ウェブを有効化
+      - run: flutter pub get # パッケージ取得
+      - run: flutter build web # ウェブビルド
+      - uses: peaceiris/actions-gh-pages@v3 # GitHub Pagesデプロイアクション
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web # ビルド成果物のディレクトリ
